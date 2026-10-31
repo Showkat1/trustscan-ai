@@ -1,0 +1,13 @@
+# Database migrations
+
+Run from `backend/`:
+
+```bash
+uv run alembic upgrade head
+```
+
+Create a new migration after changing models:
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+```

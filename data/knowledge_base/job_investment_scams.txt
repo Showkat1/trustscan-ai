@@ -1,4 +1,4 @@
-SOURCE: Trustiva Cybersecurity Knowledge Base
+SOURCE: TrustScan Cybersecurity Knowledge Base
 
 TITLE: Job and Investment Scam Indicators
 

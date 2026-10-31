@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trustscan-api"
+version = "2.0.0"
+description = "TrustScan AI — evidence-grounded fraud investigation API"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "TrustScan AI" }]
+
+dependencies = [
+    "fastapi>=0.162,<1.0",
+    "uvicorn[standard]>=0.54,<1.0",
+    "sqlalchemy[asyncio]>=2.1,<3.0",
+    "asyncpg>=0.32,<1.0",
+    "aiosqlite>=0.22,<1.0",
+    "alembic>=1.20,<2.0",
+    "pgvector>=0.5,<1.0",
+    "pydantic>=2.14,<3.0",
+    "pydantic-settings>=2.16,<3.0",
+    "pwdlib[argon2]>=0.3,<1.0",
+    "pyjwt>=2.15,<3.0",
+    "python-multipart>=0.0.32,<1.0",
+    "structlog>=26.1,<27.0",
+    "httpx>=0.28,<1.0",
+    "tenacity>=9.2,<10.0",
+    "openai>=3.41,<4.0",
+    "pymupdf>=2.0,<3.0",
+    "pillow>=13.0,<14.0",
+    "pytesseract>=0.3.13,<1.0",
+    "email-validator>=2.3,<3.0",
+    "numpy>=2.5,<3.0",
+]
+
+[project.optional-dependencies]
+embeddings = ["sentence-transformers>=6.2,<7.0"]
+dev = [
+    "pytest>=9.2,<10.0",
+    "pytest-asyncio>=1.4,<2.0",
+    "ruff>=0.9,<1.0",
+    "mypy>=1.15,<2.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning:passlib.*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app", "tests", "scripts", "migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC"]
+ignore = [
+    "B008",
+    "E501",
+    "UP006",
+    "UP035",
+    "UP042",
+    "UP045",
+    "ASYNC240",
+]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+warn_unused_ignores = true

@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /register
+Disallow: /dashboard
+Disallow: /investigate
+Disallow: /history
+Disallow: /investigations
+Disallow: /knowledge
+Disallow: /settings

@@ -1,0 +1,100 @@
+name: trustscan
+
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trustscan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trustscan}
+      POSTGRES_DB: ${POSTGRES_DB:-trustscan}
+    volumes:
+      # PostgreSQL 18+ images keep data under /var/lib/postgresql/<major>/docker,
+      # so the volume must be mounted at /var/lib/postgresql (not .../data).
+      - postgres-data:/var/lib/postgresql
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - trustscan
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TRUSTSCAN_ENVIRONMENT: ${TRUSTSCAN_ENVIRONMENT:-development}
+      TRUSTSCAN_DEBUG: ${TRUSTSCAN_DEBUG:-false}
+      TRUSTSCAN_LOG_JSON: ${TRUSTSCAN_LOG_JSON:-true}
+      TRUSTSCAN_LOG_LEVEL: ${TRUSTSCAN_LOG_LEVEL:-INFO}
+      TRUSTSCAN_SECRET_KEY: ${TRUSTSCAN_SECRET_KEY:?Set TRUSTSCAN_SECRET_KEY in .env}
+      TRUSTSCAN_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-trustscan}:${POSTGRES_PASSWORD:-trustscan}@db:5432/${POSTGRES_DB:-trustscan}
+      TRUSTSCAN_AUTO_CREATE_TABLES: "false"
+      TRUSTSCAN_SEED_KNOWLEDGE_ON_STARTUP: "true"
+      TRUSTSCAN_CORS_ORIGINS: ${TRUSTSCAN_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      TRUSTSCAN_FRONTEND_URL: ${TRUSTSCAN_FRONTEND_URL:-http://localhost:3000}
+      TRUSTSCAN_COOKIE_SECURE: ${TRUSTSCAN_COOKIE_SECURE:-false}
+      TRUSTSCAN_COOKIE_DOMAIN: ${TRUSTSCAN_COOKIE_DOMAIN:-}
+      TRUSTSCAN_LLM_ENABLED: ${TRUSTSCAN_LLM_ENABLED:-true}
+      TRUSTSCAN_LLM_API_KEY: ${TRUSTSCAN_LLM_API_KEY:-}
+      TRUSTSCAN_LLM_BASE_URL: ${TRUSTSCAN_LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      TRUSTSCAN_LLM_MODEL: ${TRUSTSCAN_LLM_MODEL:-openrouter/free}
+      TRUSTSCAN_EMBEDDING_PROVIDER: ${TRUSTSCAN_EMBEDDING_PROVIDER:-hash}
+      TRUSTSCAN_OCR_ENABLED: "true"
+      TRUSTSCAN_MAX_UPLOAD_SIZE_MB: ${TRUSTSCAN_MAX_UPLOAD_SIZE_MB:-10}
+      TRUSTSCAN_RATE_LIMIT_ENABLED: ${TRUSTSCAN_RATE_LIMIT_ENABLED:-true}
+      TRUSTSCAN_PIPELINE_MODE: ${TRUSTSCAN_PIPELINE_MODE:-background}
+      # Knowledge base is read-only; uploads live in a writable named volume
+      # (a volume cannot be nested inside a read-only bind mount).
+      TRUSTSCAN_UPLOAD_DIR: /uploads
+    volumes:
+      - ./data:/data:ro
+      - uploads-data:/uploads
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - trustscan
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks:
+      - trustscan
+
+volumes:
+  postgres-data:
+  uploads-data:
+
+networks:
+  trustscan:
+    driver: bridge
