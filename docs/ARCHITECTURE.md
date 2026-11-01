@@ -84,6 +84,7 @@ duration. Unhandled exceptions are logged and returned as a stable error envelop
 | `users` | `id`, `email` (unique), `password_hash`, `full_name`, `role`, `is_active`, timestamps | Argon2 password hashes; role drives admin-only actions. |
 | `refresh_sessions` | `id`, `user_id`, `token_hash`, `expires_at`, `revoked_at`, `user_agent`, `ip` | One row per active refresh token; rotation and revocation. |
 | `investigations` | `id`, `user_id`, `input_type`, `status`, `stage`, `stage_index`, `text`, `url`, `file_*`, `risk_score`, `risk_level`, `report` (JSON), timestamps | Owns the full report JSON and denormalised summary columns used by list/filter queries. |
+| `device_scans` | `id`, `user_id`, `score`, `level`, `summary`, `signals` (JSON), `recommendations` (JSON), `metrics` (JSON), platform/browser, timestamps | One row per browser scan; the raw metrics snapshot keeps stored reports reproducible. |
 | `knowledge_documents` | `id`, `title`, `source`, `category`, `content`, `checksum` | Curated trusted guidance. |
 | `knowledge_chunks` | `id`, `document_id`, `chunk_index`, `content`, `embedding vector(384)` | pgvector index; SQLite fallback stores JSON and scores in-process. |
 
@@ -201,7 +202,28 @@ suite, guarding against scoring regressions.
 
 ---
 
-## 8. Frontend
+## 8. Device scan
+
+`POST /device/scans` accepts a `DeviceSnapshot` collected in the browser and returns a stored
+assessment. Collection (`frontend/src/lib/device-scan.ts`) reads only observable browser facts:
+
+- **Transport** — secure context, cookies, local/session storage and IndexedDB availability.
+- **Privacy** — WebRTC ICE candidates (local vs public addresses), Do Not Track, Global Privacy
+  Control.
+- **Permissions** — camera, microphone, geolocation, notifications and clipboard state.
+- **Integrity** — `navigator.webdriver` and the timezone name compared with the reported UTC offset.
+- **Environment** — screen, viewport, CPU cores, memory, connection and battery.
+
+`services/device_scan.py` applies additive, documented weights and clamps to 0–100 (LOW < 25,
+MEDIUM < 50, HIGH < 75, CRITICAL ≥ 75). Negative weights reward DNT/GPC. Each scan keeps the signal
+list, recommendations and raw metrics snapshot, so a stored report is reproducible and auditable.
+
+The browser values are self-reported observations, not attestations. The report is an exposure
+assessment, not a malware verdict.
+
+---
+
+## 9. Frontend
 
 ```
 src/
@@ -209,8 +231,9 @@ src/
 │   ├── layout.tsx          Root providers, metadata, fonts (system stack)
 │   ├── page.tsx            Public landing page
 │   ├── (auth)/             Login and registration split layout
-│   ├── (app)/              Protected shell: dashboard, investigate, history,
-│   │                       investigations/[id], knowledge, settings
+│   ├── (app)/              Protected shell: dashboard, investigate, device,
+│   │                       device/[id], history, investigations/[id], knowledge,
+│   │                       settings
 │   ├── error.tsx           Route error boundary
 │   └── not-found.tsx       404
 ├── components/
@@ -221,6 +244,7 @@ src/
 └── lib/
     ├── api.ts              Typed fetch client, token storage, refresh-retry
     ├── auth-context.tsx    Session bootstrap and auth actions
+    ├── device-scan.ts      In-browser device/WebRTC collection
     ├── query-provider.tsx  TanStack Query defaults
     ├── types.ts            Shared API contracts
     └── utils.ts            Formatting and risk tone helpers
@@ -247,7 +271,7 @@ throughout.
 
 ---
 
-## 9. Failure handling and observability
+## 10. Failure handling and observability
 
 | Failure | Behaviour |
 | --- | --- |
@@ -265,7 +289,7 @@ by Docker Compose health checks and are safe for orchestrators.
 
 ---
 
-## 10. Scaling and extension points
+## 11. Scaling and extension points
 
 - **API** is stateless apart from in-process rate limiting and background tasks. To scale
   horizontally, move the limiter to Redis and the pipeline to a worker queue (Celery/RQ/Arq);
@@ -280,7 +304,7 @@ by Docker Compose health checks and are safe for orchestrators.
 
 ---
 
-## 11. Testing strategy
+## 12. Testing strategy
 
 - **Backend** — pytest with an isolated SQLite database, inline pipeline, hash embeddings and rate
   limiting disabled. Coverage includes auth/session rotation, ownership checks, investigation

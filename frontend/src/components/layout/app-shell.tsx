@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MonitorSmartphone,
   Plus,
   ScanSearch,
   Settings,
@@ -37,6 +38,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/investigate", label: "Investigate", icon: ScanSearch },
+  { href: "/device", label: "Device", icon: MonitorSmartphone },
   { href: "/history", label: "History", icon: History },
   { href: "/knowledge", label: "Knowledge", icon: BookOpenCheck },
   { href: "/settings", label: "Settings", icon: Settings },

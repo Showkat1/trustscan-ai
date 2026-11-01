@@ -1,4 +1,5 @@
 from app.models.audit import AuditEvent
+from app.models.device import DeviceScan
 from app.models.investigation import (
     InputType,
     Investigation,
@@ -10,6 +11,7 @@ from app.models.user import RefreshToken, User, UserRole
 
 __all__ = [
     "AuditEvent",
+    "DeviceScan",
     "InputType",
     "Investigation",
     "InvestigationStatus",

@@ -36,6 +36,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     investigations: Mapped[list[Investigation]] = relationship(  # noqa: F821
         "Investigation", back_populates="user", cascade="all, delete-orphan"
     )
+    device_scans: Mapped[list[DeviceScan]] = relationship(  # noqa: F821
+        "DeviceScan", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class RefreshToken(UUIDMixin, Base):

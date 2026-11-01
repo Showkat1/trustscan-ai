@@ -5,6 +5,7 @@ import {
   Activity,
   ArrowRight,
   Gauge,
+  MonitorSmartphone,
   Plus,
   Radar,
   ShieldAlert,
@@ -73,12 +74,20 @@ export default function DashboardPage() {
             Here is the current picture of your investigations.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/investigate">
-            <Plus className="size-4" />
-            New investigation
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="secondary">
+            <Link href="/device">
+              <MonitorSmartphone className="size-4" />
+              Scan device
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/investigate">
+              <Plus className="size-4" />
+              New investigation
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

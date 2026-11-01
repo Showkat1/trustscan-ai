@@ -264,3 +264,146 @@ export interface ApiErrorPayload {
     details?: unknown;
   };
 }
+
+export type PermissionState = "granted" | "denied" | "prompt" | "unsupported";
+
+export type DeviceSignalSeverity =
+  | "CRITICAL"
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW"
+  | "INFO"
+  | "GOOD";
+
+export type DeviceSignalCategory =
+  | "transport"
+  | "privacy"
+  | "permissions"
+  | "integrity"
+  | "environment";
+
+export interface DeviceScreen {
+  width: number;
+  height: number;
+  pixel_ratio: number;
+  color_depth: number;
+  viewport_width: number;
+  viewport_height: number;
+}
+
+export interface DeviceHardware {
+  cpu_cores: number | null;
+  memory_gb: number | null;
+  max_touch_points: number;
+  plugins: number;
+  audio_inputs: number;
+  audio_outputs: number;
+  video_inputs: number;
+}
+
+export interface DeviceConnection {
+  effective_type: string | null;
+  downlink_mbps: number | null;
+  rtt_ms: number | null;
+  save_data: boolean;
+}
+
+export interface DeviceBattery {
+  charging: boolean | null;
+  level: number | null;
+}
+
+export interface DevicePrivacy {
+  do_not_track: boolean;
+  global_privacy_control: boolean;
+  webdriver: boolean;
+}
+
+export interface DeviceContext {
+  secure: boolean;
+  hostname: string | null;
+  protocol: string | null;
+}
+
+export interface DeviceStorage {
+  local_storage: boolean;
+  session_storage: boolean;
+  indexed_db: boolean;
+}
+
+export interface DeviceWebRtc {
+  supported: boolean;
+  local_addresses: string[];
+  public_addresses: string[];
+}
+
+export interface DevicePermissions {
+  camera: PermissionState;
+  microphone: PermissionState;
+  geolocation: PermissionState;
+  notifications: PermissionState;
+  clipboard_read: PermissionState;
+}
+
+export interface DeviceSnapshot {
+  platform: string | null;
+  browser: string | null;
+  browser_version: string | null;
+  user_agent: string | null;
+  language: string | null;
+  languages: string[];
+  timezone: string | null;
+  timezone_offset: number | null;
+  screen: DeviceScreen;
+  hardware: DeviceHardware;
+  connection: DeviceConnection;
+  battery: DeviceBattery;
+  privacy: DevicePrivacy;
+  context: DeviceContext;
+  storage: DeviceStorage;
+  webrtc: DeviceWebRtc;
+  permissions: DevicePermissions;
+  cookies_enabled: boolean;
+  collected_at: string | null;
+}
+
+export interface DeviceSignal {
+  key: string;
+  label: string;
+  severity: DeviceSignalSeverity;
+  points: number;
+  detail: string;
+  category: DeviceSignalCategory;
+}
+
+export interface DeviceRecommendation {
+  title: string;
+  detail: string;
+  priority: "now" | "soon" | "info";
+}
+
+export interface DeviceScanListItem {
+  id: string;
+  label: string | null;
+  score: number;
+  level: string;
+  summary: string;
+  platform: string | null;
+  browser: string | null;
+  created_at: string;
+}
+
+export interface DeviceScanDetail extends DeviceScanListItem {
+  user_agent: string | null;
+  signals: DeviceSignal[];
+  recommendations: DeviceRecommendation[];
+  metrics: DeviceSnapshot;
+}
+
+export interface DeviceScanPage {
+  items: DeviceScanListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}

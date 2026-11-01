@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     auth_rate_limit_per_minute: int = 12
     investigation_rate_limit_per_minute: int = 20
+    device_scan_rate_limit_per_minute: int = 30
 
     # Database
     database_url: str = "postgresql+asyncpg://trustscan:trustscan@localhost:5432/trustscan"

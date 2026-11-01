@@ -43,6 +43,7 @@ usable for demos, offline testing and evaluation.
 | **Evidence correlation** | Independent signals are linked into named patterns instead of being scored in isolation. |
 | **Explainable risk scoring** | A deterministic 0–100 engine with bounded bands and a written justification. |
 | **Protection guidance** | Ranked, practical actions rather than a bare label. |
+| **Device & browser scan** | Inspects this browser — secure context, cookies/storage, WebRTC IP exposure, granted permissions, timezone integrity and automation signals — and stores an explainable exposure score. |
 | **Auditability** | Every pipeline stage is persisted with status, timing and detail. |
 
 Unknown senders are never treated as automatically fraudulent, and the absence of reports is not
@@ -57,8 +58,8 @@ presented as proof of safety.
 │  Next.js 16 / React 19       │        │  FastAPI (Python 3.14, async)            │
 │  App Router · Tailwind 4     │  HTTP  │                                          │
 │  TanStack Query · Radix UI   │ ─────► │  Auth (JWT + rotating refresh cookie)    │
-│  TypeScript · Zod            │  JSON  │  Investigations · Analytics · Knowledge  │
-└──────────────────────────────┘        │                                          │
+│  TypeScript · Zod            │  JSON  │  Investigations · Device scans           │
+└──────────────────────────────┘        │  Analytics · Knowledge                   │
                                         │  8-stage investigation pipeline          │
                                         │    intake → extraction → URL intel       │
                                         │    → RAG → GenAI → correlation           │
@@ -68,7 +69,8 @@ presented as proof of safety.
                                         ┌───────────────▼──────────────────────────┐
                                         │  PostgreSQL 18 + pgvector                │
                                         │  users · sessions · investigations       │
-                                        │  knowledge documents/chunks (embeddings) │
+                                        │  device scans · knowledge documents      │
+                                        │  knowledge chunks (embeddings)           │
                                         └──────────────────────────────────────────┘
 ```
 
@@ -107,18 +109,18 @@ presented as proof of safety.
 trustscan-ai/
 ├── backend/                 FastAPI service
 │   ├── app/
-│   │   ├── api/             auth, investigations, analytics, knowledge, system
+│   │   ├── api/             auth, investigations, device, analytics, knowledge, system
 │   │   ├── core/            config, database, security, logging, rate limiting, errors
 │   │   ├── models/          SQLAlchemy models
 │   │   ├── schemas/         Pydantic contracts
-│   │   └── services/        pipeline, extraction, URL intel, RAG, LLM, risk, actions
+│   │   └── services/        pipeline, extraction, URL intel, RAG, LLM, risk, device scan
 │   ├── migrations/          Alembic environment + initial schema
 │   ├── scripts/             seed_knowledge, seed_demo, cleanup
 │   ├── tests/               pytest suite (API + domain)
 │   ├── Dockerfile
 │   └── pyproject.toml / uv.lock
 ├── frontend/                Next.js application
-│   ├── src/app/             routes: landing, auth, dashboard, investigate, report…
+│   ├── src/app/             routes: landing, auth, dashboard, investigate, device, report…
 │   ├── src/components/      UI primitives, layout, report visualisations
 │   ├── src/lib/             API client, auth context, types, utilities
 │   └── Dockerfile
@@ -292,6 +294,10 @@ Base path: `/api/v1` (health and metadata are also exposed at the root).
 | `POST` | `/investigations/{id}/retry` | Re-run a failed or stale investigation. |
 | `GET` | `/investigations/{id}/export` | Download the report as JSON. |
 | `DELETE` | `/investigations/{id}` | Delete an investigation and its upload. |
+| `POST` | `/device/scans` | Score and store a browser/device snapshot. |
+| `GET` | `/device/scans` | Paginated scan history (`level` filter). |
+| `GET` | `/device/scans/{id}` | Full scan with signals, recommendations and metrics. |
+| `DELETE` | `/device/scans/{id}` | Delete a stored scan. |
 | `GET` | `/analytics/overview` | Workspace statistics and distributions. |
 | `GET` | `/knowledge` | List indexed documents. |
 | `GET` | `/knowledge/search` | Semantic search over the knowledge base. |
@@ -324,7 +330,7 @@ cd frontend && npm run build
 
 The suite covers authentication and session rotation, investigation lifecycle, evidence
 extraction, URL intelligence, correlation, the risk engine (including independent-evidence
-gating) and the full evaluation dataset.
+gating), device-scan scoring and ownership isolation, and the full evaluation dataset.
 
 ---
 
