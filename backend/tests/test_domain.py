@@ -108,6 +108,53 @@ def test_url_intelligence_understands_indian_suffixes() -> None:
     assert result["registered_domain"] == "sbi.co.in"
 
 
+def test_indian_brand_impersonation_is_flagged() -> None:
+    for url, brand in (
+        ("https://paytm-kyc-verify.top/account/update", "paytm"),
+        ("https://hdfcbank-verify.top/", "hdfc"),
+        ("https://phonepe-reward.top/", "phonepe"),
+        ("https://airtel-kyc.example.com/", "airtel"),
+    ):
+        result = URLIntelligence.analyze(url)
+        assert brand in result["brand_mentions"], url
+        assert brand in result["brand_domain_mismatches"], url
+        assert "brand_domain_mismatch" in result["risk_indicators"], url
+
+
+def test_indian_official_domains_are_not_flagged() -> None:
+    for url in (
+        "https://www.paytm.com/login",
+        "https://secure-onlinesbi.sbi.co.in/login",
+        "https://www.hdfcbank.com/personal/save/accounts",
+        "https://www.airtel.in/recharge",
+    ):
+        result = URLIntelligence.analyze(url)
+        assert result["brand_domain_mismatches"] == [], url
+
+
+def test_short_brand_aliases_do_not_match_inside_words() -> None:
+    for url in (
+        "https://subsidiary.example.com/",
+        "https://arbitrary.example.com/",
+        "https://credentials.example.com/",
+    ):
+        assert URLIntelligence.analyze(url)["brand_mentions"] == [], url
+
+
+def test_india_brands_are_reported_before_global_brands() -> None:
+    result = URLIntelligence.analyze("https://paytm-paypal-verify.top/")
+    assert result["brand_mentions"] == ["paytm", "paypal"]
+
+
+def test_brand_registry_is_ordered_india_first() -> None:
+    from app.services.brand_registry import BRANDS
+
+    rank = {"IN": 0, "PK": 1, "GL": 2}
+    ranks = [rank[brand.region] for brand in BRANDS]
+    assert ranks == sorted(ranks)
+    assert ranks.count(0) > ranks.count(2)
+
+
 def test_correlation_builds_patterns_and_relationships() -> None:
     extracted = EvidenceExtractor.extract(
         "Your account will be blocked. Send your OTP and pay PKR 5,000 at "

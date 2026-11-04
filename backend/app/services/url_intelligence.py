@@ -2,6 +2,8 @@ import ipaddress
 import re
 from urllib.parse import parse_qs, unquote, urlparse
 
+from app.services.brand_registry import find_brands, official_domains
+
 
 class URLIntelligence:
     """
@@ -67,44 +69,6 @@ class URLIntelligence:
         "bl.ink",
         "qr.ae",
         "v.gd",
-    }
-
-    # ========================================================
-    # BRAND DOMAINS
-    # ========================================================
-
-    KNOWN_BRANDS = {
-        "hbl": ["hbl.com", "hbl.com.pk"],
-        "ubl": ["ubl.com.pk", "ubldigital.com"],
-        "mcb": ["mcb.com.pk"],
-        "meezan": ["meezanbank.com"],
-        "alfalah": ["bankalfalah.com"],
-        "nbp": ["nbp.com.pk"],
-        "jazz": ["jazz.com.pk"],
-        "zong": ["zong.com.pk"],
-        "telenor": ["telenor.com.pk"],
-        "ufone": ["ufone.com"],
-        "easypaisa": ["easypaisa.com.pk"],
-        "jazzcash": ["jazzcash.com.pk"],
-        "nadra": ["nadra.gov.pk"],
-        "sbp": ["sbp.org.pk"],
-        "fbr": ["fbr.gov.pk"],
-        "fia": ["fia.gov.pk"],
-        "secp": ["secp.gov.pk"],
-        "paypal": ["paypal.com"],
-        "apple": ["apple.com", "icloud.com"],
-        "google": ["google.com", "gmail.com"],
-        "microsoft": ["microsoft.com", "live.com", "outlook.com"],
-        "amazon": ["amazon.com", "amazon.pk"],
-        "meta": ["meta.com", "facebook.com", "instagram.com", "whatsapp.com"],
-        "netflix": ["netflix.com"],
-        "linkedin": ["linkedin.com"],
-        "binance": ["binance.com"],
-        "coinbase": ["coinbase.com"],
-        "daraz": ["daraz.pk"],
-        "careem": ["careem.com"],
-        "bykea": ["bykea.com"],
-        "foodpanda": ["foodpanda.pk"],
     }
 
     # ========================================================
@@ -327,7 +291,8 @@ class URLIntelligence:
 
         brand_mentions = (
             cls._find_brand_mentions(
-                decoded_url
+                decoded_url,
+                hostname,
             )
         )
 
@@ -642,19 +607,10 @@ class URLIntelligence:
     def _find_brand_mentions(
         cls,
         url: str,
+        hostname: str,
     ) -> list[str]:
 
-        found = []
-
-        for brand in cls.KNOWN_BRANDS:
-
-            if brand in url:
-
-                found.append(
-                    brand
-                )
-
-        return found
+        return find_brands(url, hostname)
 
     # ========================================================
     # BRAND / DOMAIN MISMATCH
@@ -677,16 +633,13 @@ class URLIntelligence:
 
         for brand in brands:
 
-            official_domains = (
-                cls.KNOWN_BRANDS.get(
-                    brand,
-                    [],
-                )
+            allowed_domains = official_domains(
+                brand
             )
 
             if (
                 registered_domain
-                and registered_domain not in official_domains
+                and registered_domain not in allowed_domains
             ):
 
                 mismatches.append(
