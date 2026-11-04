@@ -77,6 +77,37 @@ def test_url_intelligence_accepts_official_domain() -> None:
     assert "brand_domain_mismatch" not in result["risk_indicators"]
 
 
+def test_url_intelligence_rejects_non_http_schemes() -> None:
+    for url in (
+        "javascript:alert(1)",
+        "data:text/html;base64,PHNjcmlwdD4=",
+        "ftp://example.com/payload",
+    ):
+        result = URLIntelligence.analyze(url)
+        assert result["valid"] is False, url
+        assert "scheme" in (result["error"] or "").lower(), url
+
+
+def test_url_intelligence_treats_bare_host_port_as_a_url() -> None:
+    result = URLIntelligence.analyze("localhost:8000/api/v1")
+    assert result["valid"] is True
+    assert result["hostname"] == "localhost"
+    assert result["port"] == 8000
+
+
+def test_url_intelligence_keeps_ip_addresses_intact() -> None:
+    result = URLIntelligence.analyze("http://192.168.1.1/kyc-update")
+    assert result["valid"] is True
+    assert result["is_ip_address"] is True
+    assert result["registered_domain"] == "192.168.1.1"
+    assert "ip_address_url" in result["risk_indicators"]
+
+
+def test_url_intelligence_understands_indian_suffixes() -> None:
+    result = URLIntelligence.analyze("https://secure-onlinesbi.sbi.co.in/login")
+    assert result["registered_domain"] == "sbi.co.in"
+
+
 def test_correlation_builds_patterns_and_relationships() -> None:
     extracted = EvidenceExtractor.extract(
         "Your account will be blocked. Send your OTP and pay PKR 5,000 at "

@@ -145,6 +145,62 @@ class URLIntelligence:
                 ),
             }
 
+        scheme_match = re.match(
+            r"^([a-zA-Z][a-zA-Z0-9+\-.]*):(.*)$",
+            original_url,
+            re.DOTALL,
+        )
+
+        if scheme_match:
+
+            candidate = scheme_match.group(1).lower()
+            remainder = scheme_match.group(2)
+
+            is_explicit_scheme = "://" in original_url
+
+            # "example.com:8080" and "localhost:8000" are
+            # hosts with a port, not schemes.
+            looks_like_host_port = (
+                "." in candidate
+                or re.match(r"^\d+(?:[/?#]|$)", remainder) is not None
+            )
+
+            if (
+                is_explicit_scheme
+                or not looks_like_host_port
+            ) and candidate not in {"http", "https"}:
+
+                return {
+                    "url": original_url,
+                    "valid": False,
+                    "error": (
+                        f"Unsupported URL scheme: {candidate}"
+                    ),
+                    "hostname": "",
+                    "registered_domain": "",
+                    "scheme": candidate,
+                    "port": None,
+                    "is_https": False,
+                    "is_ip_address": False,
+                    "is_url_shortener": False,
+                    "contains_at_symbol": (
+                        "@" in original_url
+                    ),
+                    "contains_punycode": (
+                        "xn--" in original_url.lower()
+                    ),
+                    "subdomain_count": 0,
+                    "suspicious_keywords": [],
+                    "query_parameters": [],
+                    "brand_mentions": [],
+                    "brand_domain_mismatches": [],
+                    "risk_indicators": [],
+                    "assessment": (
+                        "The URL uses an unsupported scheme "
+                        "and was not analysed."
+                    ),
+                }
+
         normalized_url = cls._normalize_url(
             original_url
         )
@@ -468,6 +524,12 @@ class URLIntelligence:
 
             return ""
 
+        if URLIntelligence._is_ip_address(
+            hostname
+        ):
+
+            return hostname
+
         parts = hostname.split(".")
 
         if len(parts) < 2:
@@ -488,6 +550,16 @@ class URLIntelligence:
             "co.uk",
             "com.au",
             "co.in",
+            "org.in",
+            "net.in",
+            "gov.in",
+            "ac.in",
+            "nic.in",
+            "firm.in",
+            "gen.in",
+            "ind.in",
+            "res.in",
+            "edu.in",
         }
 
         last_two = ".".join(
