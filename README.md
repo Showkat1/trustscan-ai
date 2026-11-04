@@ -127,7 +127,10 @@ trustscan-ai/
 ├── data/
 │   ├── knowledge_base/      Trusted cybersecurity guidance (RAG corpus)
 │   └── test_cases/          20-case evaluation dataset
-├── docs/ARCHITECTURE.md     Deeper design notes
+├── docs/
+│   ├── ARCHITECTURE.md      Deeper design notes
+│   └── trustscan/           Commercialisation strategy: thesis, market, product, roadmap,
+│                            economics, investor readiness and risk register
 ├── legacy/streamlit/        Original Streamlit MVP (preserved)
 ├── docker-compose.yml
 ├── Makefile
